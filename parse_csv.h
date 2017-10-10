@@ -7,5 +7,6 @@
 #include "object.h"
 
 object * fill_scene(char* filename);
+int num_objects(char* filename);
 
 #endif

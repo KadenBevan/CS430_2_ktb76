@@ -45,3 +45,13 @@ object * fill_scene(char* filename){
 	fclose(fh);
 	return m_scene;
 }
+
+int num_objects(char* filename){
+	FILE* fh = fopen(filename, "r");
+	char line[256];
+	int lines = 0;
+	for(int line_count = 0; fgets(line, sizeof(line), fh); line_count++){
+		lines++;
+	}
+	return lines;
+}
