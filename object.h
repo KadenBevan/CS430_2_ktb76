@@ -4,11 +4,12 @@
 typedef struct object{
 	// 0 = camera, 1 = sphere, 2 = plane
 	char kind[64];
-	double radius;
+	int radius;
 	double width;
 	double height;
 	int* position;
 	float* color;
-	int* normal;
+	float* normal;
 } object;
+
 #endif
