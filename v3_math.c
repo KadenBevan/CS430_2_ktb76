@@ -31,7 +31,7 @@ float dot_vector(float* v1, float* v2){
 
 void normalize_vector(float* v_in){
     float w = sqrt( fabs(v_in[0] * v_in[0] + v_in[1] * v_in[1] + v_in[2] * v_in[2]) );
-    v_in[0] = v_in[0] / w;
-    v_in[1] = v_in[1] / w;
-	v_in[2] = v_in[2] / w;
+    v_in[0] /= w;
+    v_in[1] /= w;
+	v_in[2] /= w;
 }
