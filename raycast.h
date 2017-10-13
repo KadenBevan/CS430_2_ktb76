@@ -7,10 +7,11 @@
 #include "parse_csv.h"
 #include "object.h"
 #include "v3_math.h"
+#include "ppmrw.h"
 
-float find_intersection_sphere(float* ray, int* position, int radius);
-float find_intersection_plane();
-void raycast(char* filename, int img_width, int img_height, pixel* img);
+float find_intersection_sphere(float* ray0, float* ray1, int* position, int radius);
+float find_intersection_plane(float* ray0, float* ray, int* position, float* normal);
+void raycast(char* fn_in, char* fn_out, int img_width, int img_height);
 
 
 #endif

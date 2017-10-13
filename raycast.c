@@ -2,61 +2,97 @@
 
 
 int main(int argc, char *argv[]){
-	int width = atoi(argv[2]);
-	int height = atoi(argv[3]);
+	int width = atoi(argv[1]);
+	int height = atoi(argv[2]);
+	char* fn_in = argv[3];
+	char* fn_out = argv[4];
 	object * scene = fill_scene(argv[1]);
-	pixel * pix = malloc(sizeof(pixel)*width*height);
-	//printf(scene[1].kind);
-	//float* r1 = vector(5, 5, 5);
-	//find_intersection_sphere(r1, scene[1].position, scene[1].radius);
-	raycast(argv[1], 5, 5, pix);
+	raycast(fn_in, fn_out, width, height);
 	return 0;
 }
 
-float find_intersection_sphere(float* ray, int* position, int radius){
-	//printf("%i", position[1]);
-	//a = (x2-x1)^2+(y2-y1)^2+(z2-z1)^2;
-	float a = (ray[0]*ray[0])+(ray[1]*ray[1])+(ray[2]*ray[2]);
-	float b = 2*ray[0]*(0-position[0])+2*ray[1]*(0-position[1])+2*ray[2]*(0-position[2]);
-	float c = (position[0]*position[0])+(position[1]*position[1])+(position[2]*position[2])-(radius*radius);
-	float disc = b*b-4*a*c;
-	float t = ((-1*b)-sqrtf(fabs(disc)))/(2*a);
-	//printf("INTERSECTING RAY: %f %f %f\nWith SPHERE pos[%i %i %i] r %i\n", ray[0], ray[1], ray[2], position[0], position[1], position[2], radius);
-	//printf("a=%f b=%f c=%f disc=%f t=%f\n", a, b, c, disc, t);
-	return t;
-	//if(t>0){
-	//	return 1;
-	//}
-	//if(t<0){
-	//	return 0;
-	//}
-	//printf("%i\n", ray[0]);
+float find_intersection_plane(float* ray0, float* ray, int* position, float* normal){
+	normalize_vector(normal);
+	float a = (normal[0] * position[0]) + (normal[1] * position[1]) + (normal[2] * position[2]); 
+	float b = (normal[0] * ray[0]) + (normal[1] * ray[1]) + (normal[2] * ray[2]);
+	
+	if(b < 10e-5){
+		return -1;
+	}
+	float t = a / b;
+	return (t >= 0) ? t : -1;
 }
 
-void raycast(char* filename, int img_width, int img_height, pixel* img){
-	object * scene = fill_scene(filename);
+float find_intersection_sphere(float* ray0, float* ray1, int* position, int radius){
+	
+	float b = -2*(position[0]*ray1[0] + position[1]*ray1[1]+position[2]*ray1[2]);
+
+	float c = pow(position[0], 2) + pow(position[1], 2) + pow(position[2], 2) - pow(radius, 2);
+
+	float disc = pow(b, 2) - 4*c;
+	float t1 = (-1 * b + sqrt(fabs(disc))) / 2;
+	float t0 = (-1 * b - sqrt(fabs(disc))) / 2;
+
+	if (disc < 0){
+		return -1;
+	}
+	else if(t0 > 0 && t1 > 0){
+		if(t0 > t1){
+			return t1;
+		}
+		else{
+			return t0;
+		}
+	}
+	else if(t1 >= 0){
+		return t1;
+	}
+	else if(t0 >= 0){
+		return t0;
+	}
+}
+
+void raycast(char* fn_in, char* fn_out, int img_width, int img_height){
+	FILE* fh_out = fopen(fn_out, "w");
+	fprintf(fh_out, "P3\n");
+	fprintf(fh_out, "%d %d\n%d\n", img_width, img_height, 255);
+	// Fill scene
+	object * scene = fill_scene(fn_in);
 	float cam_width = scene[0].width;
 	float cam_height = scene[0].height;
-	int t;
-	// Scale pixels
 	float pixel_dim_y = cam_height / img_height;
 	float pixel_dim_x = cam_width / img_width;
+	int color[3];
 	//for every pixel in image
 	for(int i=0; i<img_height; i++){
 		for(int j=0; j<img_width; j++){
-			float* ray = vector(-1*(cam_width / 2.0) + pixel_dim_x * (j + 0.5), (cam_height / 2.0) + pixel_dim_y * (i + 0.5), 1);
+			float* ray = vector((cam_width/2)-pixel_dim_y+(i+0.5), -cam_height/2+pixel_dim_x*(i + 0.5), -1.0);
+			float* r0 = vector(0, 0, 0);
 			normalize_vector(ray);
 			//for every object
-			for(int k = 1; k < num_objects(filename); k++) {
-				t = 0;
-				if((scene[k].kind) != NULL) {
-					//check intersection
-					if(strcmp((scene[k].kind), "sphere") == 0){
-						t = find_intersection_sphere(ray, scene[k].position, scene[k].radius);
-
-					}
+			float tmp_t = INFINITY;
+			for (int k=1; k < num_objects(fn_in); k++) {
+				float t = 0.00;
+				if(strcmp(scene[k].kind, "sphere") == 0){
+					t = find_intersection_sphere(r0, ray, scene[k].position, scene[k].radius);
 				}
+				if(strcmp(scene[k].kind, "plane") == 0){
+					t = find_intersection_plane(r0, ray, scene[k].position, scene[k].normal);
+				}
+				if (t > 0 && t <= tmp_t) {
+					tmp_t = t;
+					color[0] = (int)scene[k].color[0];
+					color[1] = (int)scene[k].color[1];
+					color[2] = (int)scene[k].color[2];
+				}
+			}
+			if (tmp_t > 0 && tmp_t != INFINITY) {
+				fprintf(fh_out, "%i %i %i ", color[0], color[1], color[2]);
+			}
+			else{
+				fprintf(fh_out, "0 0 0 ");
 			}
 		}
 	}
+	fclose(fh_out);
 }
